@@ -17,6 +17,7 @@ The service listens on `127.0.0.1:18121` by default.
 
 ```bash
 go build ./...
+go test ./...
 go run ./cmd/workflowcheck --workflow register-device
 go run ./cmd/workflowcheck --workflow open-verification-case
 go run ./cmd/workflowcheck --workflow record-measurement
@@ -27,9 +28,26 @@ go run ./cmd/workflowcheck --workflow seal-verification
 The workflow runner starts a fresh in-process HTTP service and exercises the
 public API. It is a production smoke command, not a unit test.
 
-Tests are intentionally deferred for this initialization baseline. The later
-engineering-task stage will add the unit and integration test suite and replace
-or extend these smoke checks with red/green verification tests.
+The model-driven test suite (`go test ./...`, package under
+`internal/bootstrap`) drives the real HTTP handler over a real loopback server
+and verifies the state machine beyond the fixed smoke paths:
+
+- `TestModelDrivenSequences`: a fixed-seed random generator plans hundreds of
+  mixed operations across multiple devices and cases. A specification-level
+  reference model predicts every outcome; after each request every detail and
+  events endpoint is compared with the model. Use `-model-seeds=1,2,3` and
+  `-model-steps=N` to repeat or extend a run.
+- `TestTerminalStateRetries`: every mutating route replayed against each state.
+- `TestRepositoryCallbackFailures`: failures inside the repository commit
+  callback (validation that runs after the state transition, malformed bodies)
+  must roll back completely, including externally visible id sequences.
+- `TestConcurrent*Races` and `TestConcurrentCrossTransitionRace`: barrier-synced
+  concurrent requests prove exactly one commit per race with no half-written
+  state. Run with `-race` and tune rounds via `-race-rounds=N`.
+
+When the model and implementation diverge, the failing test reports the
+phenomenon plus an automatically minimized HTTP transcript; assertions encode
+the specification and are not relaxed to match observed behavior.
 
 ## API
 

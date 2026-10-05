@@ -123,6 +123,13 @@ both success and failure behavior. The seal check also races two concurrent
 seal requests to prove that the repository mutation lock permits exactly one
 seal.
 
-Tests are intentionally deferred for this initialization baseline. The later
-engineering-task stage will add unit and integration tests, including red/green
-verification for the workflows and their failure paths.
+The integration test suite lives in `internal/bootstrap` (`go test ./...`).
+It is model-driven: fixed random seeds generate long, repeatable operation
+sequences across many devices and cases, a reference model predicts each
+outcome, and every request is followed by detail/events readbacks that must
+match the model. Separate tests cover terminal-state retries, in-callback
+repository failures and copy-on-write rollback (including id-sequence reuse),
+and barrier-synced concurrent races for every mutating route, all exercised
+through the real HTTP handler and run under `-race`. Divergences are reported
+as phenomena with a minimized HTTP reproduction transcript; the specification
+assertions are not weakened to match an implementation.
