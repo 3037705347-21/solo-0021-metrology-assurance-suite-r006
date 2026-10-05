@@ -27,9 +27,15 @@ go run ./cmd/workflowcheck --workflow seal-verification
 The workflow runner starts a fresh in-process HTTP service and exercises the
 public API. It is a production smoke command, not a unit test.
 
-Tests are intentionally deferred for this initialization baseline. The later
-engineering-task stage will add the unit and integration test suite and replace
-or extend these smoke checks with red/green verification tests.
+The model-driven state-machine suite (real HTTP handlers, fixed-seed
+multi-device/multi-case operation sequences, concurrent-interleaving
+linearization, terminal-state retries and rollback probes) lives in
+[`internal/statetest`](internal/statetest/README.md):
+
+```bash
+go test ./...
+go test -race ./internal/statetest/ -v
+```
 
 ## API
 
